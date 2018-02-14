@@ -4,10 +4,11 @@ using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
+    public Flock flock;
     public int CamSpeed;
 
-    public List<GameObject> unitStack;
-    public List<GameObject> unitSelection;
+    public List<Unit> unitStack;
+    public List<Unit> unitSelection;
     private Vector3 mouseStartPos;
 
     private bool selecting;
@@ -16,26 +17,26 @@ public class PlayerController : MonoBehaviour
     {
         GameControler.player = this;
         this.selecting = false;
-        this.unitStack = new List<GameObject>();
-        this.unitSelection = new List<GameObject>();
+        this.unitStack = new List<Unit>();
+        this.unitSelection = new List<Unit>();
 	}
 	
 	void Update () 
     {
-        checkMouseState();
-        move();
+        CheckMouseState();
+        Move();
 	}
 
-    private void checkMouseState()
+    private void CheckMouseState()
     {
         //Wenn linker Mausbutton geklickt wurde und eine Auswahl bereits getroffen wurde
-        if (Input.GetMouseButtonDown(0) && unitSelection.Count != 0)
+        if(Input.GetMouseButtonDown(0) && unitSelection.Count != 0)
         {
-            unselectUnits();
+            UnselectUnits();
         }//Wenn rechter Maus-Button geklickt wurde
-        else if (Input.GetMouseButtonDown(1))
+        else if(Input.GetMouseButtonDown(1))
         {
-            commandUnits();
+            CommandUnits();
         }//Wenn linker Maus-Button gedrückt gehalten wird
         else if(Input.GetMouseButton(0) && selecting == false)
         {
@@ -45,7 +46,7 @@ public class PlayerController : MonoBehaviour
         }//Wenn linker Maus-Button losgelassen wird
         else if(Input.GetMouseButton(0) == false && selecting)
         {
-            selectUnits();
+            SelectUnits();
             selecting = false;  
         }
 
@@ -56,20 +57,20 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void unselectUnits()
+    private void UnselectUnits()
     {
-        unitSelection = new List<GameObject>();
-        foreach (GameObject unit in unitSelection)
+        foreach (Unit unit in unitSelection)
         {
             //HealthBar unsichtbar machen
         }
+        unitSelection = new List<Unit>();
     }
 
-    private void selectUnits()
+    private void SelectUnits()
     {
-        foreach (GameObject unit in unitStack)
+        foreach (Unit unit in unitStack)
         {
-            if (isWithinSelectionBounds(unit) && !unitSelection.Contains(unit))
+            if (IsWithinSelectionBounds(unit.gameObject) && !unitSelection.Contains(unit))
             {
                 //Healthbar sichtbar machen
                 unitSelection.Add(unit);
@@ -77,7 +78,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private bool isWithinSelectionBounds(GameObject gameObject)
+    private bool IsWithinSelectionBounds(GameObject gameObject)
     {
         if (!selecting)
             return false;
@@ -90,18 +91,20 @@ public class PlayerController : MonoBehaviour
             camera.WorldToViewportPoint(gameObject.transform.position));
     }
 
-    private void commandUnits()
+    private void CommandUnits()
     {
-        //Pathfinding
+        //Pathfinding && Flocking
+        flock.RunTowards(unitSelection, new Vector2(Input.mousePosition.x, Input.mousePosition.z));
     }
 
-    private void move()
+    private void Move()
     {
         transform.Translate(Input.GetAxis("Horizontal") * CamSpeed * Time.deltaTime, 0, Input.GetAxis("Vertical") * CamSpeed * Time.deltaTime);
     }
 
     void OnGUI() 
     {
+        //Auswahl-Fenster zeichnen
         if (selecting)
         {
             var rect = Utils.GetScreenRect(mouseStartPos, Input.mousePosition);

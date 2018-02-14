@@ -64,6 +64,5 @@ public static class Utils
         var bounds = new Bounds();
         bounds.SetMinMax(min, max);
         return bounds;
-
     }
 }
