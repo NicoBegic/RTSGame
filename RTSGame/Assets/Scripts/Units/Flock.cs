@@ -2,19 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Flock : MonoBehaviour {
+public class Flock {
 
     private bool move;
     private List<Unit> boids;
     private Vector2 targetPos;
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
+    public void Move()
+    {
         if (move)
         {
             foreach (Unit unit in boids)
@@ -22,7 +17,7 @@ public class Flock : MonoBehaviour {
                 move = unit.MoveTowards(boids, targetPos);
             }
         }
-	}
+    }
 
     public void RunTowards(List<Unit> boids, Vector2 targetPos)
     {

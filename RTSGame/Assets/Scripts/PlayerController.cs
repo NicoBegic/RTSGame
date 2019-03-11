@@ -4,18 +4,19 @@ using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
-    public Flock flock;
     public int CamSpeed;
 
     public List<Unit> unitStack;
     public List<Unit> unitSelection;
     private Vector3 mouseStartPos;
 
+    private Flock flock;
     private bool selecting;
 
 	void Awake() 
     {
         GameControler.player = this;
+        this.flock = new Flock();
         this.selecting = false;
         this.unitStack = new List<Unit>();
         this.unitSelection = new List<Unit>();
@@ -25,6 +26,7 @@ public class PlayerController : MonoBehaviour
     {
         CheckMouseState();
         Move();
+        flock.Move();
 	}
 
     private void CheckMouseState()

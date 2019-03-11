@@ -6,7 +6,8 @@ using UnityEngine.UI;
 public abstract class Unit : MonoBehaviour{
 
     public Image HealthBar;
-    public int health;
+    public int Health;
+    public Movement Movement;
 
     //SyncVar
     private string _name;
@@ -20,11 +21,6 @@ public abstract class Unit : MonoBehaviour{
     protected float fireRate;
     protected int shootingRange;
 
-    //Flocking-Variablen
-    private Vector2 target;
-    private Vector2 location;
-    private Vector2 velocity;
-    private Vector2 acceleration;
     private float maxForce;
     private float maxSpeed;
 
@@ -36,9 +32,16 @@ public abstract class Unit : MonoBehaviour{
         set { _name = value; }
     }
 
+    public Vector2 Location { 
+        get { return new Vector2(this.transform.position.x, this.transform.position.z); }
+        set { this.transform.position.Set(value.x, this.transform.position.y, value.y); }
+    }
+
     protected void Initialize()
     {
         GameControler.player.unitStack.Add(this);
+        this.Location = this.transform.position;
+        this.Movement = new Movement();
         this.maxForce = 0.3f;
         this.maxSpeed = this.movementSpeed;
     }
@@ -87,89 +90,21 @@ public abstract class Unit : MonoBehaviour{
 
     private void HandleBars()
     {
-        HealthBar.fillAmount = health;
+        HealthBar.fillAmount = Health;
     }
 
 
     public bool MoveTowards(List<Unit> selection, Vector2 target)
     {
         //Wenn an target-Pos angekommen, movement anhalten
-        if(this.transform.position.Equals(target)){
+        if(this.Location.Equals(target)){
             return false;
         }
-        this.target = target;
-        this.velocity = new Vector2(); //Anfangs-Bewegung in eine Richtung
-        this.location = new Vector2(this.transform.position.x, this.transform.position.z);
-
-        Flock(target, selection);
-        UpdateLocation();
-        this.transform.position = this.location;
+        Debug.Log("Update Move");
+        this.Location = this.Movement.MoveTowards(selection, target, this);
         return true;
     }
 
-    private void Flock(Vector2 target, List<Unit> selection)
-    {
-        //A* implementieren
-        var seperation = Seperate(selection);
-        var cohesion = Cohere(selection);
-        var alignment = Align(selection);
-
-        //Gewichtung je nach Einheitentyp
-        seperation *= 1.5f;
-        cohesion *= 1;
-        alignment *= 1;
-
-        ApplyForce(seperation);
-        ApplyForce(cohesion);
-        ApplyForce(alignment);
-    }
-
-    private void ApplyForce(Vector2 force)
-    {
-        acceleration += force;
-    }
-
-    private void UpdateLocation()
-    {
-        velocity += acceleration;
-
-        if(velocity.magnitude > maxSpeed){
-            velocity.Normalize();
-            velocity *= maxSpeed;
-        }
-        location += velocity;
-        acceleration = Vector2.zero;
-    }
-
-    private Vector2 Seek(Vector2 target)
-    {
-        var desired = target - this.location;
-        desired.Normalize();
-        desired *= maxSpeed;
-
-        var steer = desired - velocity;
-        if (steer.magnitude > maxForce)
-        {
-            steer.Normalize();
-            steer *= maxForce;
-        }
-        return steer;
-    }
-
-    private Vector2 Seperate(List<Unit> selection)
-    {
-        return Vector2.zero;
-    }
-
-    private Vector2 Cohere(List<Unit> selection)
-    {
-        return Vector2.zero;
-    }
-
-    private Vector2 Align(List<Unit> selection)
-    {
-        return Vector2.zero;
-    }
 
     public void SetTargetEnemy(Unit enemy)
     {
@@ -184,10 +119,10 @@ public abstract class Unit : MonoBehaviour{
 
     protected bool InRange(Unit target)
     {
-        if (Vector3.Distance(this.transform.position, target.transform.position) <= shootingRange)
+        if (Vector3.Distance(this.Location, target.Location) <= shootingRange)
             return true;
-
-        return false;
+        else
+            return false;
     }
 
     /**
