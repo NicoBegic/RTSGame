@@ -11,12 +11,8 @@ public class Flock {
     public void Move()
     {
         if (move)
-        {
             foreach (Unit unit in boids)
-            {
                 move = unit.MoveTowards(boids, targetPos);
-            }
-        }
     }
 
     public void RunTowards(List<Unit> boids, Vector2 targetPos)

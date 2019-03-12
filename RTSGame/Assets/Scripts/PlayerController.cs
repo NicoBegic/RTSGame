@@ -96,7 +96,15 @@ public class PlayerController : MonoBehaviour
     private void CommandUnits()
     {
         //Pathfinding && Flocking
-        flock.RunTowards(unitSelection, new Vector2(Input.mousePosition.x, Input.mousePosition.z));
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        Physics.Raycast(ray, out hit);
+        if (hit.collider != null)
+        {
+            Debug.Log("hit: " + hit.point);
+            flock.RunTowards(unitSelection, new Vector2(hit.point.x, hit.point.z));
+        }
+        
     }
 
     private void Move()

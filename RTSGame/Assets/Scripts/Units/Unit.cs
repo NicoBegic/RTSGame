@@ -34,13 +34,12 @@ public abstract class Unit : MonoBehaviour{
 
     public Vector2 Location { 
         get { return new Vector2(this.transform.position.x, this.transform.position.z); }
-        set { this.transform.position.Set(value.x, this.transform.position.y, value.y); }
+        set { this.transform.position = new Vector3(value.x, this.transform.position.y, value.y); }
     }
 
     protected void Initialize()
     {
         GameControler.player.unitStack.Add(this);
-        this.Location = this.transform.position;
         this.Movement = new Movement();
         this.maxForce = 0.3f;
         this.maxSpeed = this.movementSpeed;
@@ -97,7 +96,9 @@ public abstract class Unit : MonoBehaviour{
     public bool MoveTowards(List<Unit> selection, Vector2 target)
     {
         //Wenn an target-Pos angekommen, movement anhalten
-        if(this.Location.Equals(target)){
+        var acceptanceR = 0.5f;
+        if(this.Location.x < target.x + acceptanceR && this.Location.y < target.y + acceptanceR
+            && this.Location.x > target.x - acceptanceR && this.Location.y > target.y - acceptanceR){
             return false;
         }
         Debug.Log("Update Move");

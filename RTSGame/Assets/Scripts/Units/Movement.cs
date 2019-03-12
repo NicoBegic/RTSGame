@@ -8,10 +8,13 @@ public class Movement {
 
     //Flocking-Variablen
     private Vector2 location;
-    private Vector2 target;
     private Vector2 acceleration;
     private const float maxForce = 0.03f;
     private const float maxSpeed = 2f;
+
+    private const float neighborDistance = 5;
+    //Fuer jede Einheit unterschiedlich. Sollte protected variable einer Unit sein
+    private const float desiredSeparation = 5;
 
     private Unit u;
 
@@ -22,10 +25,11 @@ public class Movement {
 
     public Vector2 MoveTowards(List<Unit> selection, Vector2 target, Unit u)
     {
-        this.target = target;
-        this.Velocity = new Vector2(1, 1); //Anfangs-Bewegung in eine Richtung
+        this.location = new Vector2(u.Location.x, u.Location.y);
         this.u = u;
-        this.location = u.Location;
+
+        this.Velocity = target - location ; //Anfangs-Bewegung Richtung target
+        this.Velocity.Normalize();
 
         Flock(target, selection);
         UpdateLocation();
@@ -86,8 +90,6 @@ public class Movement {
 
     private Vector2 Seperate(List<Unit> selection)
     {
-        //Fuer jede Einheit unterschiedlich. Sollte protected variable einer Unit sein
-        float desiredSeparation = 50;
         Vector2 steer = Vector2.zero;
         int neighborCount = 0;
 
@@ -127,7 +129,6 @@ public class Movement {
 
     private Vector2 Cohere(List<Unit> selection)
     {
-        float neighborDistance = 100;
         Vector2 sum = Vector2.zero;
         int neighborCount = 0;
 
@@ -152,7 +153,6 @@ public class Movement {
 
     private Vector2 Align(List<Unit> selection)
     {
-        float neighborDistance = 100;
         Vector2 sum = Vector2.zero;
         int neighborCount = 0;
 
