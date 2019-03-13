@@ -8,16 +8,41 @@ public class Flock {
     private List<Unit> boids;
     private Vector2 targetPos;
 
-    public void Move()
-    {
-        if (move)
-            foreach (Unit unit in boids)
-                move = unit.MoveTowards(boids, targetPos);
-    }
-
-    public void RunTowards(List<Unit> boids, Vector2 targetPos)
+    public Flock(List<Unit> boids)
     {
         this.boids = boids;
+    }
+
+    public List<Unit> getSelection()
+    {
+        return boids;
+    }
+
+    public Vector2 getTargetPos()
+    {
+        return targetPos;
+    }
+
+    public bool isMoving()
+    {
+        return move;
+    }
+
+    public void setTarget(Vector2 target)
+    {
+        this.targetPos = target;
+    }
+
+    public void Move()
+    {
+        for (int i = 0; i < boids.Count && move; i++)
+        {
+            move = boids[i].MoveTowards(boids, targetPos);
+        }
+    }
+
+    public void RunTowards(Vector2 targetPos)
+    {
         this.targetPos = targetPos;
         move = true;
     }

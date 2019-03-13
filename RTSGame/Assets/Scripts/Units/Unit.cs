@@ -8,6 +8,7 @@ public abstract class Unit : MonoBehaviour{
     public Image HealthBar;
     public int Health;
     public Movement Movement;
+    public Vector2 TargetPos;
 
     //SyncVar
     private string _name;
@@ -96,16 +97,25 @@ public abstract class Unit : MonoBehaviour{
     public bool MoveTowards(List<Unit> selection, Vector2 target)
     {
         //Wenn an target-Pos angekommen, movement anhalten
-        var acceptanceR = 0.5f;
-        if(this.Location.x < target.x + acceptanceR && this.Location.y < target.y + acceptanceR
-            && this.Location.x > target.x - acceptanceR && this.Location.y > target.y - acceptanceR){
-            return false;
+        if (!AtTarget(target))
+        {
+            this.Location = this.Movement.MoveTowards(selection, target, this);
+            return true;
         }
-        Debug.Log("Update Move");
-        this.Location = this.Movement.MoveTowards(selection, target, this);
-        return true;
+        else
+            return false;
     }
 
+    private bool AtTarget(Vector2 target)
+    {
+        var acceptanceR = 0.5f;
+        if (this.Location.x < target.x + acceptanceR && this.Location.y < target.y + acceptanceR
+            && this.Location.x > target.x - acceptanceR && this.Location.y > target.y - acceptanceR)
+        {
+            return false;
+        }
+        return true;
+    }
 
     public void SetTargetEnemy(Unit enemy)
     {

@@ -7,32 +7,55 @@ public class PlayerController : MonoBehaviour
     public int CamSpeed;
 
     public List<Unit> unitStack;
-    public List<Unit> unitSelection;
-    private Vector3 mouseStartPos;
 
-    private Flock flock;
+    private List<Flock> unitGroups;
+    private int groupNum;
+    private Vector3 mouseStartPos;
     private bool selecting;
 
 	void Awake() 
     {
         GameControler.player = this;
-        this.flock = new Flock();
         this.selecting = false;
         this.unitStack = new List<Unit>();
-        this.unitSelection = new List<Unit>();
+        this.unitGroups = new List<Flock>();
+        this.groupNum = 0;
 	}
 	
 	void Update () 
     {
         CheckMouseState();
         Move();
-        flock.Move();
+
+        if (unitGroups.Count > 0) 
+        { 
+            updateUnitGroups();
+        }
 	}
+
+    private void updateUnitGroups()
+    {
+        List<Flock> toDelete = new List<Flock>();
+        foreach (var flock in unitGroups)
+        {
+            if (flock.getTargetPos() != Vector2.zero)
+            {
+                flock.Move();
+                if (!flock.isMoving() && !unitGroups[groupNum-1].Equals(flock))
+                    toDelete.Add(flock);
+            }
+        }
+
+        foreach (var flock in toDelete)
+        {
+            unitGroups.Remove(flock);
+        }
+    }
 
     private void CheckMouseState()
     {
         //Wenn linker Mausbutton geklickt wurde und eine Auswahl bereits getroffen wurde
-        if(Input.GetMouseButtonDown(0) && unitSelection.Count != 0)
+        if(Input.GetMouseButtonDown(0) && unitGroups[groupNum-1].getSelection().Count != 0)
         {
             UnselectUnits();
         }//Wenn rechter Maus-Button geklickt wurde
@@ -61,15 +84,18 @@ public class PlayerController : MonoBehaviour
 
     private void UnselectUnits()
     {
-        foreach (Unit unit in unitSelection)
+        foreach (Unit unit in unitGroups[groupNum - 1].getSelection())
         {
             //HealthBar unsichtbar machen
         }
-        unitSelection = new List<Unit>();
+        unitGroups.RemoveAt(groupNum - 1);
+        groupNum--;
     }
 
     private void SelectUnits()
     {
+        List<Unit> unitSelection = new List<Unit>();
+
         foreach (Unit unit in unitStack)
         {
             if (IsWithinSelectionBounds(unit.gameObject) && !unitSelection.Contains(unit))
@@ -78,6 +104,10 @@ public class PlayerController : MonoBehaviour
                 unitSelection.Add(unit);
             }
         }
+
+        Flock newFlock = new Flock(unitSelection);
+        unitGroups.Add(newFlock);
+        groupNum++;
     }
 
     private bool IsWithinSelectionBounds(GameObject gameObject)
@@ -95,16 +125,18 @@ public class PlayerController : MonoBehaviour
 
     private void CommandUnits()
     {
-        //Pathfinding && Flocking
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        Physics.Raycast(ray, out hit);
-        if (hit.collider != null)
+        if (groupNum > 0)
         {
-            Debug.Log("hit: " + hit.point);
-            flock.RunTowards(unitSelection, new Vector2(hit.point.x, hit.point.z));
+            //Pathfinding && Flocking
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            Physics.Raycast(ray, out hit);
+            if (hit.collider != null)
+            {
+                Debug.Log("hit: " + hit.point);
+                unitGroups[groupNum-1].RunTowards(new Vector2(hit.point.x, hit.point.z));
+            }
         }
-        
     }
 
     private void Move()
