@@ -2,185 +2,94 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Movement {
+public class Movement : MonoBehaviour {
 
     public Vector2 Velocity;
 
     //Flocking-Variablen
     private Vector2 location;
-    private Vector2 acceleration;
-    private const float maxForce = 0.03f;
-    private const float maxSpeed = 2f;
+    private float speed;
+    private List<Unit> unitsToAvoid;
 
-    private const float neighborDistance = 5;
-    //Fuer jede Einheit unterschiedlich. Sollte protected variable einer Unit sein
-    private const float desiredSeparation = 5;
-
-    private Unit u;
-
-    public Movement()
+    void Start()
     {
-        Velocity = new Vector2();
+        this.Velocity = new Vector2();
+        this.unitsToAvoid = new List<Unit>();
     }
-
-    public Vector2 MoveTowards(List<Unit> selection, Vector2 target, Unit u)
+    
+    public Vector2 MoveTowards(Vector2 position, Vector2 target, float speed)
     {
-        this.location = new Vector2(u.Location.x, u.Location.y);
-        this.u = u;
+        this.location = new Vector2(position.x, position.y);
+        this.speed = speed;
 
-        this.Velocity = target - location ; //Anfangs-Bewegung Richtung target
-        this.Velocity.Normalize();
+        this.Velocity += Steer(target, false);
 
-        Flock(target, selection);
-        UpdateLocation();
-
+        this.location += this.Velocity;
         return this.location;
     }
 
-    private void Flock(Vector2 target, List<Unit> selection)
+
+    private Vector2 Steer(Vector2 target, bool finalPoint)
     {
-        //A* implementieren
-        var seperation = Seperate(selection);
-        var cohesion = Cohere(selection);
-        var alignment = Align(selection);
+        Vector2 desiredVel = target - location;
+        float distance = desiredVel.magnitude;
 
-        //Gewichtung je nach Einheitentyp
-        seperation *= 1.5f;
-        cohesion *= 1;
-        alignment *= 1;
+        desiredVel.Normalize();
 
-        ApplyForce(seperation);
-        ApplyForce(cohesion);
-        ApplyForce(alignment);
-    }
-
-    private void ApplyForce(Vector2 force)
-    {
-        acceleration += force;
-    }
-
-    private void UpdateLocation()
-    {
-        Velocity += acceleration;
-
-        if (Velocity.magnitude > maxSpeed)
+        if (finalPoint && distance < 5f)
         {
-            Velocity.Normalize();
-            Velocity *= maxSpeed;
-        }
-        location += Velocity;
-        acceleration = Vector2.zero;
-    }
+            desiredVel *= speed * (distance / 5f);
+        } else desiredVel *= speed;
 
-    private Vector2 Seek(Vector2 target)
-    {
-        var desired = target - this.location;
-        desired.Normalize();
-        desired *= maxSpeed;
-
-        var steer = desired - Velocity;
-        if (steer.magnitude > maxForce)
+        Vector2 steeringForce = desiredVel - Velocity;
+        if (unitsToAvoid.Count > 0)
         {
-            steer.Normalize();
-            steer *= maxForce;
+            steeringForce += Seperate();
         }
-        return steer;
+
+        return steeringForce;
     }
 
-
-    private Vector2 Seperate(List<Unit> selection)
+    private Vector2 Seperate()
     {
         Vector2 steer = Vector2.zero;
-        int neighborCount = 0;
+        int neighborCount = unitsToAvoid.Count;
 
-        foreach (var unit in selection)
+        foreach (var unit in unitsToAvoid)
         {
             float distance = Vector2.Distance(this.location, unit.Location);
-
-            if (!this.u.Equals(unit) && distance < desiredSeparation)
-            {
-                Vector2 difference = unit.Location - this.location;
-                difference.Normalize();
-                difference /= distance;
-                steer += difference;
-
-                neighborCount++;
-            } 
+            Vector2 difference = unit.Location - this.location;
+            difference.Normalize();
+            difference /= distance;
+            steer += difference;
         }
 
-        if (neighborCount > 0)
-            steer /= neighborCount;
+        steer /= neighborCount;
 
         if (steer.magnitude > 0)
         {
             steer.Normalize();
-            steer *= maxSpeed;
-            steer -= Velocity;
-
-            if (steer.magnitude > maxForce)
-            {
-                steer.Normalize();
-                steer *= maxForce;
-            }
+            steer *= speed;
         }
 
         return -steer;
     }
 
-    private Vector2 Cohere(List<Unit> selection)
+    private void OnTriggerEnter(Collider other)
     {
-        Vector2 sum = Vector2.zero;
-        int neighborCount = 0;
-
-        foreach (var unit in selection)
+        Unit otherU = other.GetComponent<Unit>();
+        if (otherU != null && !unitsToAvoid.Contains(otherU))
         {
-            float distance = Vector2.Distance(this.location, unit.Location);
-            if (!this.u.Equals(unit) && distance < neighborDistance)
-            {
-                sum += unit.Location;
-                neighborCount++;
-            }
+            unitsToAvoid.Add(otherU);
         }
-
-        if (neighborCount > 0)
-        {
-            sum /= neighborCount;
-            return Seek(sum);
-        }
-        else
-            return Vector2.zero;
     }
 
-    private Vector2 Align(List<Unit> selection)
+    private void OnTriggerExit(Collider other)
     {
-        Vector2 sum = Vector2.zero;
-        int neighborCount = 0;
-
-        foreach (var unit in selection)
+        Unit otherU = other.GetComponent<Unit>();
+        if (otherU != null && unitsToAvoid.Contains(otherU))
         {
-            float distance = Vector2.Distance(this.location, unit.Location);
-            if (!this.u.Equals(unit) && distance < neighborDistance)
-            {
-                sum += unit.Movement.Velocity;
-                neighborCount++;
-            }
+            unitsToAvoid.Remove(otherU);
         }
-
-        if (neighborCount > 0)
-        {
-            sum /= neighborCount;
-            sum.Normalize();
-            sum *= maxSpeed;
-            Vector2 steer = sum - Velocity;
-
-            if (steer.magnitude > maxForce)
-            {
-                steer.Normalize();
-                steer *= maxForce;
-            }
-            return steer;
-        }
-        else
-            return Vector2.zero;
     }
 }

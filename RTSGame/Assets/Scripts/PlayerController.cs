@@ -5,21 +5,39 @@ using System.Collections.Generic;
 public class PlayerController : MonoBehaviour
 {
     public int CamSpeed;
-
     public List<Unit> unitStack;
-
+    
     private List<Flock> unitGroups;
     private int groupNum;
+    private int groupSelectedID;
     private Vector3 mouseStartPos;
     private bool selecting;
+
+    /**
+     * Drei Zustaende: return groupNum wenn groupSelectedID = 10 -> Letzte Auswahl
+     *                 return groupSelectedID < 10 -> Hotkey-Auswahl
+     *                 return groupSelected = 11 -> keine Auswahl
+     */
+    private int groupSelected
+    {
+        get
+        {
+            if (groupSelectedID == 10)
+                 return groupNum - 1;
+            else return groupSelectedID;
+        }
+        set { groupSelectedID = value; }
+    }
+
 
 	void Awake() 
     {
         GameControler.player = this;
         this.selecting = false;
         this.unitStack = new List<Unit>();
-        this.unitGroups = new List<Flock>();
+        this.unitGroups = new List<Flock>();  
         this.groupNum = 0;
+        this.groupSelectedID = 11;
 	}
 	
 	void Update () 
@@ -27,7 +45,7 @@ public class PlayerController : MonoBehaviour
         CheckMouseState();
         Move();
 
-        if (unitGroups.Count > 0) 
+        if (groupNum > 0)
         { 
             updateUnitGroups();
         }
@@ -41,7 +59,7 @@ public class PlayerController : MonoBehaviour
             if (flock.getTargetPos() != Vector2.zero)
             {
                 flock.Move();
-                if (!flock.isMoving() && !unitGroups[groupNum-1].Equals(flock))
+                if (!flock.isMoving() && (groupSelected == 11 || !unitGroups[groupSelected].Equals(flock)))
                     toDelete.Add(flock);
             }
         }
@@ -49,13 +67,14 @@ public class PlayerController : MonoBehaviour
         foreach (var flock in toDelete)
         {
             unitGroups.Remove(flock);
+            groupNum--;
         }
     }
 
     private void CheckMouseState()
     {
         //Wenn linker Mausbutton geklickt wurde und eine Auswahl bereits getroffen wurde
-        if(Input.GetMouseButtonDown(0) && unitGroups[groupNum-1].getSelection().Count != 0)
+        if(Input.GetMouseButtonDown(0) && groupSelected != 11 && unitGroups[groupSelected].getSelection().Count > 0) 
         {
             UnselectUnits();
         }//Wenn rechter Maus-Button geklickt wurde
@@ -72,10 +91,8 @@ public class PlayerController : MonoBehaviour
         else if(Input.GetMouseButton(0) == false && selecting)
         {
             SelectUnits();
-            selecting = false;  
-        }
-
-        //Wenn linker Maus-Button geklickt wurde
+            selecting = false;
+        }//Wenn linker Maus-Button geklickt wurde
         else if (Input.GetMouseButtonDown(0) && selecting == false)
         {
             mouseStartPos = Input.mousePosition;
@@ -84,12 +101,11 @@ public class PlayerController : MonoBehaviour
 
     private void UnselectUnits()
     {
-        foreach (Unit unit in unitGroups[groupNum - 1].getSelection())
+        foreach (Unit unit in unitGroups[groupSelected].getSelection())
         {
             //HealthBar unsichtbar machen
         }
-        unitGroups.RemoveAt(groupNum - 1);
-        groupNum--;
+        groupSelected = 11;
     }
 
     private void SelectUnits()
@@ -105,9 +121,12 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        Flock newFlock = new Flock(unitSelection);
-        unitGroups.Add(newFlock);
-        groupNum++;
+        if(unitSelection.Count > 0){
+            groupSelected = 10;
+            Flock newFlock = new Flock(unitSelection);
+            unitGroups.Add(newFlock);
+            groupNum++;
+        }
     }
 
     private bool IsWithinSelectionBounds(GameObject gameObject)
@@ -125,7 +144,7 @@ public class PlayerController : MonoBehaviour
 
     private void CommandUnits()
     {
-        if (groupNum > 0)
+        if (groupNum > 0 && groupSelected != 11)
         {
             //Pathfinding && Flocking
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -134,7 +153,7 @@ public class PlayerController : MonoBehaviour
             if (hit.collider != null)
             {
                 Debug.Log("hit: " + hit.point);
-                unitGroups[groupNum-1].RunTowards(new Vector2(hit.point.x, hit.point.z));
+                unitGroups[groupSelected].RunTowards(new Vector2(hit.point.x, hit.point.z));
             }
         }
     }

@@ -9,7 +9,7 @@ public class Soldier : Unit {
         base.Initialize();
         this.Name = "Soldier";
         this.armor = 20;
-        this.movementSpeed = 10;
+        this.movementSpeed = 0.2f;
         this.baseStrength = 5;
         this.hitPoints = 10;
         this.fireRate = 2;

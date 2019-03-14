@@ -22,9 +22,6 @@ public abstract class Unit : MonoBehaviour{
     protected float fireRate;
     protected int shootingRange;
 
-    private float maxForce;
-    private float maxSpeed;
-
     private Unit targetEnemy;
     private float timePassed;
 
@@ -41,9 +38,7 @@ public abstract class Unit : MonoBehaviour{
     protected void Initialize()
     {
         GameControler.player.unitStack.Add(this);
-        this.Movement = new Movement();
-        this.maxForce = 0.3f;
-        this.maxSpeed = this.movementSpeed;
+        this.Movement = GetComponent<Movement>();
     }
 
     protected void HandleUpdate()
@@ -99,7 +94,7 @@ public abstract class Unit : MonoBehaviour{
         //Wenn an target-Pos angekommen, movement anhalten
         if (!AtTarget(target))
         {
-            this.Location = this.Movement.MoveTowards(selection, target, this);
+            this.Location = this.Movement.MoveTowards(this.Location, target, this.movementSpeed);
             return true;
         }
         else
@@ -112,9 +107,9 @@ public abstract class Unit : MonoBehaviour{
         if (this.Location.x < target.x + acceptanceR && this.Location.y < target.y + acceptanceR
             && this.Location.x > target.x - acceptanceR && this.Location.y > target.y - acceptanceR)
         {
+            return true;
+        }else
             return false;
-        }
-        return true;
     }
 
     public void SetTargetEnemy(Unit enemy)
